@@ -11,6 +11,8 @@ No build step, no server, no dependencies to install. Open `index.html`.
 
 ## Running it
 
+**GitHub Pages** – go to GitHub Pages Site
+
 **Locally** — double-click `index.html`, or:
 
 ```bash
