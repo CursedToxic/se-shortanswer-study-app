@@ -209,7 +209,7 @@ directory). Six suites were run against this build:
 | Suite | What it checks | Result |
 |---|---|---|
 | Syntax | every JS file parses | 20/20 |
-| Data integrity | cross-references, coverage, state engine, mastery maths, rubric weighting, structural analysis, misconception probes, paper balance | 2,660 checks |
+| Data integrity | cross-references, coverage, state engine, mastery maths, directive-verb mark bands, question wording, rubric weighting, structural analysis, misconception probes, model-answer length, paper balance | 3,435 checks |
 | Auto-graders | each challenge/bounty: a reference solution passes **and** the supplied starter fails | 11/11 |
 | Route sweep | all 41 routes render in headless Chrome with no JS errors | 41/41 |
 | DOM interaction | widgets driven as a student would: answering, marking, caps, misconceptions, tables, Gantt, UML, zone theming | 253 checks |
@@ -221,6 +221,17 @@ directory). Six suites were run against this build:
 
 `js/marking.js` applies two layers, because a response can contain every right
 word and still not answer the question.
+
+**0 · Marks match the directive verb.** Every stem is written as an
+examination task, not a syllabus dot point, and its mark value must fit the
+NESA Glossary of Key Words band for the directive verb it uses — `identify`
+1–2, `describe` 2–3, `explain`/`compare` 3–5, `analyse` 4–6,
+`evaluate`/`justify`/`discuss` 4–7. A "describe and identify" question cannot
+be worth as much as an "evaluate" one. Response length follows the same logic
+at roughly **30 words per mark** (3 marks ≈ 60 words, 4 ≈ 90, 5 ≈ 120,
+6 ≈ 150), and every model answer is held to that length, because an exemplar
+three times longer than a candidate can write in the time teaches a technique
+nobody can reproduce.
 
 **1 · Weighted rubric.** Each criterion carries a mark value and a cognitive
 level — Knowledge, Description, Explanation, Analysis, Judgement — inferred

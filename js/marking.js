@@ -310,8 +310,13 @@
   }
 
   /* ------------------------------------------------------------- the mark */
+  /* Realistic HSC response lengths — roughly 30 words per mark once the
+     first mark is allowed for. A candidate has about 1.5 minutes per mark in
+     the examination, so a model answer far longer than this teaches a length
+     no student can actually produce under timed conditions. */
+  const WORDS_FOR_MARKS = { 1: 20, 2: 35, 3: 60, 4: 90, 5: 120, 6: 150 };
   function expectedWords(marks) {
-    return marks <= 2 ? 40 : marks <= 3 ? 70 : marks <= 4 ? 110 : marks <= 5 ? 180 : 260;
+    return WORDS_FOR_MARKS[marks] || Math.max(20, marks * 30 - 30);
   }
 
   function mark(q, text) {
