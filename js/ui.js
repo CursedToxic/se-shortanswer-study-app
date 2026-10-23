@@ -39,31 +39,70 @@
 
   /* --------------------------------------------------- syntax highlight */
   const KEYWORDS = {
-    python: /\b(def|class|return|if|elif|else|for|while|in|not|and|or|import|from|as|try|except|finally|raise|with|lambda|None|True|False|self|global|nonlocal|pass|break|continue|yield|assert|print|range|len|sum|set|dict|list|int|str|float|bool|max|min|abs|round|isinstance|super|zip|enumerate)\b/g,
-    javascript: /\b(function|const|let|var|return|if|else|for|while|of|in|new|class|extends|this|try|catch|finally|throw|async|await|null|undefined|true|false|typeof|instanceof|break|continue|switch|case|default|console|Math|JSON|Object|Array|String|Number|Set|Map|require|export|import)\b/g,
-    sql: /\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP|BY|ORDER|HAVING|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|AND|OR|NOT|NULL|AS|COUNT|AVG|SUM|MIN|MAX|DESC|ASC|LIMIT|DISTINCT)\b/gi,
+    python: 'def class return if elif else for while in not and or import from as try except finally raise with lambda None True False self global nonlocal pass break continue yield assert print range len sum set dict list int str float bool max min abs round isinstance super zip enumerate',
+    javascript: 'function const let var return if else for while of in new class extends this try catch finally throw async await null undefined true false typeof instanceof break continue switch case default console Math JSON Object Array String Number Set Map require export import',
+    sql: 'SELECT FROM WHERE JOIN LEFT RIGHT INNER OUTER ON GROUP BY ORDER HAVING INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE AND OR NOT NULL AS COUNT AVG SUM MIN MAX DESC ASC LIMIT DISTINCT',
     text: null
   };
+  const KWSET = {};
+  Object.keys(KEYWORDS).forEach(l => {
+    KWSET[l] = KEYWORDS[l] ? new Set(KEYWORDS[l].split(' ')) : null;
+  });
 
-  function highlight(src, lang) {
-    let out = esc(src);
-    const marks = [];
-    const stash = html => { marks.push(html); return '\u0000' + (marks.length - 1) + '\u0000'; };
-    // comments & strings first so keywords inside them are not coloured
-    if (lang === 'python') {
-      out = out.replace(/(#[^\n]*)/g, m => stash('<span style="color:var(--ink-3)">' + m + '</span>'));
-    } else if (lang === 'javascript') {
-      out = out.replace(/(\/\/[^\n]*)/g, m => stash('<span style="color:var(--ink-3)">' + m + '</span>'));
-    } else if (lang === 'sql') {
-      out = out.replace(/(--[^\n]*)/g, m => stash('<span style="color:var(--ink-3)">' + m + '</span>'));
+  /* Per-language comment and string forms. `null` means the language has none;
+     the scanner substitutes a group that can never match, so the group numbers
+     below stay fixed whatever the language. */
+  const RULES = {
+    python: {
+      comment: /#[^\n]*/,
+      string: /'''[\s\S]*?'''|"""[\s\S]*?"""|'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"/
+    },
+    javascript: {
+      comment: /\/\/[^\n]*|\/\*[\s\S]*?\*\//,
+      string: /'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`/
+    },
+    sql: { comment: /--[^\n]*/, string: /'(?:''|[^'\n])*'/ },
+    text: { comment: null, string: /'[^'\n]*'|"[^"\n]*"/ }
+  };
+  const NEVER = '(?!)';
+  const SCANNERS = {};
+  function scanner(lang) {
+    if (!SCANNERS[lang]) {
+      const r = RULES[lang] || RULES.text;
+      SCANNERS[lang] = new RegExp([
+        '(' + (r.comment ? r.comment.source : NEVER) + ')',   // 1 comment
+        '(' + (r.string ? r.string.source : NEVER) + ')',     // 2 string
+        '(\\d+\\.?\\d*)',                                     // 3 number
+        '([A-Za-z_$][\\w$]*)'                                 // 4 word
+      ].join('|'), 'g');
     }
-    out = out.replace(/(&quot;[^&\n]*?&quot;|'[^'\n]*?'|`[^`]*?`)/g,
-      m => stash('<span style="color:var(--ok)">' + m + '</span>'));
-    const kw = KEYWORDS[lang];
-    if (kw) out = out.replace(kw, m => '<span style="color:var(--accent-2);font-weight:600">' + m + '</span>');
-    out = out.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:var(--warn)">$1</span>');
-    out = out.replace(/\u0000(\d+)\u0000/g, (m, i) => marks[+i]);
-    return out;
+    return SCANNERS[lang];
+  }
+  const tint = (colour, text, bold) =>
+    '<span style="color:' + colour + (bold ? ';font-weight:600' : '') + '">' + text + '</span>';
+
+  /* One pass over the RAW source. Each token is escaped as it is emitted and
+     the emitted markup is never rescanned, so a colour value like
+     var(--accent-2) can no longer be mistaken for a numeric literal, and the
+     digits in a placeholder can no longer swallow a comment or string. */
+  function highlight(src, lang) {
+    const text = String(src === undefined || src === null ? '' : src);
+    const kws = KWSET[lang] !== undefined ? KWSET[lang] : null;
+    const re = scanner(lang);
+    let out = '', last = 0, m;
+    re.lastIndex = 0;
+    while ((m = re.exec(text)) !== null) {
+      out += esc(text.slice(last, m.index));
+      const tok = esc(m[0]);
+      if (m[1] !== undefined) out += tint('var(--ink-3)', tok);
+      else if (m[2] !== undefined) out += tint('var(--ok)', tok);
+      else if (m[3] !== undefined) out += tint('var(--warn)', tok);
+      else if (kws && kws.has(lang === 'sql' ? m[4].toUpperCase() : m[4]))
+        out += tint('var(--accent-2)', tok, true);
+      else out += tok;
+      last = m.index + m[0].length;
+    }
+    return out + esc(text.slice(last));
   }
 
   const codeBlock = (src, lang) =>

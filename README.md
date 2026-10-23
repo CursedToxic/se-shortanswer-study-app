@@ -69,6 +69,13 @@ Both have a hard wall-clock timeout, so an infinite loop is killed rather than
 hanging the tab. This is also a worked example of the sandboxing content in
 SSA-2.3 — the tool demonstrates the thing it teaches.
 
+Snippets are coloured by a single-pass tokeniser in `js/ui.js`. It scans the
+raw source once and escapes each token as it emits it, so no pass ever reads
+the markup an earlier pass produced. The harness holds it to one invariant —
+strip the spans and unescape, and you must get the source back byte for byte —
+which is checked against every snippet in the bank. A student must be able to
+trust that the code on screen is the code being asked about.
+
 ### Examinations
 Questions come in all four media formats the HSC paper uses — **code snippets,
 system logs, architecture diagrams and scenarios** — across multiple choice,
@@ -210,8 +217,8 @@ directory). Six suites were run against this build:
 
 | Suite | What it checks | Result |
 |---|---|---|
-| Syntax | every JS file parses | 20/20 |
-| Data integrity | cross-references, coverage, state engine, mastery maths, directive-verb mark bands, question wording, rubric weighting, structural analysis, misconception probes, model-answer length, paper balance | 3,435 checks |
+| Syntax | every JS file parses | 19/19 |
+| Data integrity | cross-references, coverage, state engine, mastery maths, directive-verb mark bands, question wording, rubric weighting, structural analysis, misconception probes, model-answer length, syntax highlighting, paper balance | 3,676 checks |
 | Auto-graders | each challenge/bounty: a reference solution passes **and** the supplied starter fails | 11/11 |
 | Route sweep | all 41 routes render in headless Chrome with no JS errors | 41/41 |
 | DOM interaction | widgets driven as a student would: answering, marking, caps, misconceptions, tables, Gantt, UML, zone theming | 253 checks |
